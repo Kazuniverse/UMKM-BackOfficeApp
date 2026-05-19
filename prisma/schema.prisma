@@ -1,0 +1,121 @@
+// Environment variables supplied via .env
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User/Admin Management
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(STAFF)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  transactionsCreated Transaction[] @relation("CreatedBy")
+  transactionsHandled Transaction[] @relation("HandledBy")
+
+  @@map("users")
+}
+
+enum Role {
+  ADMIN
+  STAFF
+}
+
+// Category for Products
+model Category {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relations
+  products Product[]
+
+  @@map("categories")
+}
+
+// Product Management
+model Product {
+  id        String   @id @default(cuid())
+  name      String
+  sku       String   @unique
+  price     Int      // Price in IDR (Indonesian Rupiah)
+  stock     Int      @default(0)
+  category  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  categoryRef Category        @relation(fields: [category], references: [slug])
+  transactionItems TransactionItem[]
+
+  @@map("products")
+}
+
+// Transaction/Sales Management
+model Transaction {
+  id           String             @id @default(cuid())
+  invoiceNumber String            @unique
+  customerId   String?
+  customerName String
+  customerPhone String?
+  totalAmount  Int                @default(0)
+  discount     Int                @default(0)
+  finalAmount  Int                @default(0)
+  paymentMethod PaymentMethod     @default(CASH)
+  status       TransactionStatus  @default(COMPLETED)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  // Relations
+  createdBy    String
+  createdUser  User               @relation("CreatedBy", fields: [createdBy], references: [id])
+  handledBy    String?
+  handledUser  User?              @relation("HandledBy", fields: [handledBy], references: [id])
+  items        TransactionItem[]
+
+  @@map("transactions")
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+  DEBIT
+  CREDIT
+  E_WALLET
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+// Transaction Items (Line items in a transaction)
+model TransactionItem {
+  id            String   @id @default(cuid())
+  transactionId String
+  productId     String
+  quantity      Int
+  unitPrice     Int      // Price at time of transaction
+  subtotal      Int      // quantity * unitPrice
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  product     Product     @relation(fields: [productId], references: [id])
+
+  @@map("transaction_items")
+}
