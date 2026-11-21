@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+export const dynamic = "force-dynamic";
 
 // GET /api/dashboard/stats - Get dashboard statistics
 export async function GET() {
@@ -20,7 +21,7 @@ export async function GET() {
 
     const totalRevenue = completedTransactions.reduce(
       (sum, t) => sum + t.finalAmount,
-      0
+      0,
     );
 
     // Monthly revenue
@@ -38,7 +39,7 @@ export async function GET() {
 
     const monthlyRevenue = monthlyTransactions.reduce(
       (sum, t) => sum + t.finalAmount,
-      0
+      0,
     );
 
     // Total orders
@@ -68,16 +69,8 @@ export async function GET() {
     // Monthly sales trend (last 6 months)
     const monthlySalesData = [];
     for (let i = 5; i >= 0; i--) {
-      const monthStart = new Date(
-        now.getFullYear(),
-        now.getMonth() - i,
-        1
-      );
-      const monthEnd = new Date(
-        now.getFullYear(),
-        now.getMonth() - i + 1,
-        0
-      );
+      const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
 
       const monthTransactions = await prisma.transaction.findMany({
         where: {
@@ -94,7 +87,7 @@ export async function GET() {
 
       const monthRevenue = monthTransactions.reduce(
         (sum, t) => sum + t.finalAmount,
-        0
+        0,
       );
 
       monthlySalesData.push({
@@ -147,7 +140,7 @@ export async function GET() {
     console.error("Error fetching dashboard stats:", error);
     return NextResponse.json(
       { error: "Failed to fetch dashboard statistics" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
